@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<sub-flow name="notificationSub_Flow" doc:id="017228c2-d430-4f7f-8f9b-136b065f8e5f" >
+		<logger level="INFO" doc:name="Start Log" doc:id="670a49c1-e744-415e-a9db-59d0d243241f" message='"Notification sub-flow started"'/>
+		<ee:transform doc:name="Notifaction Msg" doc:id="7dc7a621-d2bb-448a-ba11-cabae220a6b4">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+
+  "tenant": Mule::p('notification.body.tenant'),
+  "target": Mule::p('notification.body.target'),
+"resource": {
+            "id": Mule::p('notification.resource.id'),
+            "type": Mule::p('notification.resource.type')
+},
+"message": payload,
+ "email": Mule::p('notification.resource.email') as Boolean
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="${notify.requester.postMethod}" doc:name="Send Notification API" doc:id="ca02a8c8-1375-41d3-b303-cddff2b1aa06" config-ref="HTTP_Notification_Request_configuration" path="${notify.requester.path}" correlationId="#[vars.transactionId]" sendCorrelationId="ALWAYS">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer" ++ " " ++ vars.token,
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="End Log" doc:id="674e7f32-5073-4edb-86d6-e0003a924ac2" message='"Notification sub-flow ended"'/>
+	</sub-flow>
+</mule>
