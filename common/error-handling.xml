@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd">
+	
+	<error-handler name="error-handlingError_Handler" doc:id="e47f57b7-7378-4074-aacb-8512ae52a472" >
+		<on-error-propagate type="HTTP:BAD_REQUEST, HTTP:PARSING, HTTP:METHOD_NOT_ALLOWED, HTTP:NOT_ACCEPTABLE, HTTP:NOT_FOUND, HTTP:TOO_MANY_REQUESTS, HTTP:UNSUPPORTED_MEDIA_TYPE" enableNotifications="true" logException="true" doc:name="On Error Propagate - 400 series except authentication" doc:id="76b12479-8cfa-41f9-9947-a97bf1dd84c0" doc:description="bad req">
+			<set-variable value="#[400]" doc:name="Set the Status - 400" doc:id="be972ea4-6634-48c9-b20f-6761d2e6d79f" variableName="statusCode" />
+			<flow-ref doc:name="Flow Reference to error-handlingSub_Flow" doc:id="02b1aa37-5574-4d2d-a559-2569911ee56f" name="error-handlingSub_Flow" />
+		</on-error-propagate>
+		<on-error-propagate type="HTTP:CLIENT_SECURITY, HTTP:SECURITY , HTTP:UNAUTHORIZED" enableNotifications="true" logException="true" doc:name="On Error Propagate - Authentication" doc:id="f18c2f97-ee00-43fa-acff-d70c4a0f5813" doc:description="401 error">
+			<set-variable value="#[401]" doc:name="Set the tatus - 401" doc:id="eef6ca86-7d2e-4a51-a856-6af24687474d" variableName="statusCode" doc:description="error log"/>
+			<flow-ref doc:name="Flow Reference to error-handlingSub_Flow" doc:id="42c83efa-462c-441f-8b79-87ae49e402fa" name="error-handlingSub_Flow" />
+		</on-error-propagate>
+
+		<on-error-propagate type="REDELIVERY_EXHAUSTED, CONNECTIVITY, TIMEOUT" enableNotifications="true" logException="true" doc:name="On Error Propagate - Connectivity " doc:id="9702fd1e-ac88-40f5-ac5f-922a844f26d9" doc:description="503">
+			<set-variable value="#[503]" doc:name="Set the Status - 503" doc:id="5ef2ef06-5458-4d76-9f5c-65c7614a8dfa" variableName="statusCode" doc:description="log error"/>
+			<flow-ref doc:name="Flow Reference to error-handlingSub_Flow" doc:id="3fc95850-2325-41ba-aac9-16856168bd2f" name="error-handlingSub_Flow" />
+		</on-error-propagate>
+		<on-error-propagate type="SFTP:CONNECTION_TIMEOUT,SFTP:CONNECTIVITY,SFTP:DISCONNECTED,SFTP:FILE_ALREADY_EXISTS,SFTP:FILE_DOESNT_EXIST,SFTP:FILE_IS_NOT_DIRECTORY,SFTP:FILE_LOCK,SFTP:FILE_NOT_FOUND,SFTP:ILLEGAL_CONTENT,SFTP:ILLEGAL_PATH,SFTP:INVALID_CREDENTIALS,SFTP:RETRY_EXHAUSTED,SFTP:SERVICE_NOT_AVAILABLE,SFTP:UNKNOWN_HOST" enableNotifications="true" logException="true" doc:name="On Error Propagate - Connectivity" doc:id="aa73b928-3447-4d3e-be53-a08dfef13149" doc:description="bad req">
+			<set-variable value="#[500]" doc:name="Set the Status - 500" doc:id="1f94c642-55b4-4528-beb9-324657d04a5d" doc:description="log error" variableName="statusCode" />
+			<flow-ref doc:name="Flow Reference to error-handlingSub_Flow" doc:id="2d089072-2c9d-492b-b5fa-c50d6f90ed79" name="error-handlingSub_Flow" />
+		</on-error-propagate>
+		<on-error-propagate type="DB:CONNECTIVITY,DB:QUERY_EXECUTION,DB:RETRY_EXHAUSTED,DB:BAD_SQL_SYNTAX" enableNotifications="true" logException="true" doc:name="On Error Propagate " doc:id="2c1f9177-a1c9-431a-a3ee-a491e838cd24" doc:description="error">
+			<set-variable value="#[500]" doc:name="Set the Status - 500" doc:id="34704bc9-83fd-4ad5-8f04-0c46b5f4cdee" doc:description="log error" variableName="statusCode" />
+			<flow-ref doc:name="Flow Reference to error-handlingSub_Flow" doc:id="469ce3f7-d2e6-4688-9815-785c2b4690cf" name="error-handlingSub_Flow" />
+
+		</on-error-propagate>
+		<!-- If none of the above matches then handle a the exception using generic handler -->
+		<on-error-propagate type="ANY" enableNotifications="true" logException="true" doc:name="On Error Propagate - Unknown error (can be separated on requirement)" doc:id="447577b6-8b22-4106-bde2-23f49df307e0" doc:description="error">
+			<set-variable value="500" doc:name="Set  Status - 500" variableName="statusCode" doc:description="log error"/>
+			<!-- [STUDIO:"error data"]<ee:transform doc:name="error data" doc:id="73d20b3b-26a8-40f3-849a-6acb2186a7c4">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+&#45;&#45;-
+{
+  "ErrorDescription": if (error.mulemessage.typedValue is Object and error.mulemessage.typedValue.message? != null) error.mulemessage.typedValue.message else error.description,
+  "CorrelationId": correlationId as String,
+  "Timestamp": now(),
+  "AppName": "rcyc-payments-prc-app",
+  "ErrorStackTrace": if (error.mulemessage.typedValue is Object and error.mulemessage.typedValue.Status? != null) error.mulemessage.typedValue.Status else "failed",
+  "env": p('env'),
+  "interfaceName" : vars.interfaceName
+}&#93;&#93;></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="mail"><![CDATA[%dw 2.0
+output application/json
+&#45;&#45;-
+{
+  "body":if (error.mulemessage.typedValue is Object and error.mulemessage.typedValue.message? != null)
+   error.mulemessage.typedValue.message 
+  else error.description,	
+"subject": "[ERP&#93; Kyriba Payment Factory File not Transmitted"
+}&#93;&#93;></ee:set-variable>
+				</ee:variables>
+			</ee:transform> [STUDIO] -->
+			<flow-ref doc:name="Flow Reference to error-handlingSub_Flow" doc:id="212d1073-1bb3-4116-bdd9-3e7de5025d40" name="error-handlingSub_Flow" />
+		</on-error-propagate>
+	</error-handler>
+	<sub-flow name="error-handlingSub_Flow" doc:id="92205827-5d46-46fc-a28c-373ffff0f283" >
+		<ee:transform doc:name="deatil_log" doc:id="8a44a8f4-6b5e-44d3-90a2-bcc724ce75a8" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="audit_log_detail" ><![CDATA[%dw 2.0
+output application/json
+---
+{"body":{
+   "log_detail_id": vars.audit_log_detail.log_detail_id,
+   "log_id": vars.audit_log_detail.log_id default null,
+   "log_detail_interface_operation_name": vars.audit_log_detail.log_detail_interface_operation_name default null,
+   "log_detail_interface_operation_description": vars.audit_log_detail.log_detail_interface_operation_description default null,
+   "log_detail_request_type": vars.audit_log_detail.log_detail_request_type,
+   "log_detail_request_entity_id": vars.audit_log_detail.log_detail_request_entity_id,
+   "log_detail_request_payload": vars.audit_log_detail.log_detail_request_payload,
+   "log_detail_response_payload": vars.audit_log_detail.log_detail_response_payload,
+   "log_detail_source": vars.audit_log_detail.log_detail_source default null,
+   "log_detail_target": vars.audit_log_detail.log_detail_target default null,
+   "log_detail_start_time" : vars.audit_log_detail.log_detail_start_time,
+   "log_detail_end_time": now() as DateTime as String {format:"yyyy-MM-dd'T'HH:mm:ss"},
+   "log_detail_status": "Failed",
+   "log_detail_record_count_source": vars.audit_log_detail.log_detail_record_count_source default null,
+   "log_detail_record_count_staging": vars.audit_log_detail.log_detail_record_count_staging default null,
+   "log_detail_record_count_erp": vars.audit_log_detail.log_detail_record_count_erp default null,
+   "log_detail_record_count_int_error": vars.audit_log_detail.log_detail_record_count_int_error default null,
+   "log_detail_record_count_for_inv": vars.audit_log_detail.log_detail_record_count_for_inv,
+   "log_detail_record_count_not_interfaced": vars.audit_log_detail.log_detail_record_count_not_interfaced,
+   "log_detail_record_count_success": vars.audit_log_detail.log_detail_record_count_success,
+   "log_detail_error_code": vars.httpStatus,
+   "log_detail_error_message": "The Operation " ++ vars.audit_log_detail.log_detail_interface_operation_name as String  default "" ++ " is failed."
+},
+"query": p('insertDetailAudit'),
+"userproperty": "Failure"}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="Flow Reference to publishing-data-subflow" doc:id="31afe42b-c700-42eb-8a1f-2d6799ff4953" name="publishing-data-subflow"/>
+		<ee:transform doc:name="log_data" doc:id="baf1cf3e-5f09-45b7-8ccd-8cea70351f5b" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="audit_log_detail" ><![CDATA[%dw 2.0
+output application/json
+---
+{"body":{
+   "log_id": vars.batchId,
+   "log_environment": vars.env,
+   "log_project_name": vars.project_name,
+   "log_interface_id": vars.log_interface_id,//
+   "log_interface_name": vars.intefaceName,
+   "log_interface_description": "Kyriba Status Interfacing",
+   "log_request_id": null,
+   "log_request_payload": null,
+   "log_start_time": vars.log_start_time,
+   "log_end_time": now() as DateTime as String {format:"yyyy-MM-dd'T'HH:mm:ss"},
+   "log_status": "Failed",
+   "log_record_count_source":  null,
+   "log_record_count_staging": null,
+   "log_record_count_erp": null,
+   "log_record_count_int_error": null,
+   "log_record_count_for_inv": null,
+   "log_record_count_not_interfaced": null,
+   "log_record_count_success": null,
+   "log_error_code": vars.httpStatus,
+   "log_error_message": "The Operation " ++ vars.intefaceName default "" ++ " is failed."
+},
+"query": p('insertAuditLogging'),
+"userproperty": "Failure"}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="Flow Reference to publishing-data-subflow" doc:id="f4067295-f98d-4a80-b1eb-b57a5d362e34" name="publishing-data-subflow" />
+	</sub-flow>
+</mule>
