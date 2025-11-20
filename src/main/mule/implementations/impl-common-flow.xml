@@ -1,0 +1,43 @@
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="impl-common-sftp-Sub_Flow" doc:id="2b6c4646-3f71-40c6-8e84-e385bb713615" >
+		<logger level="INFO" doc:name="Write File Logger" doc:id="3e4300c3-2c74-42df-be37-92cde6258f27" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"creating the files into " ++ vars.filename as String]' />
+		<sftp:write doc:name="Writing The File" doc:id="587254cb-a667-4a9d-a7ec-1eed94d31752" config-ref="SFTP_Config" path='#[vars.writeFile.writePath ++ "/" ++ vars.fileName as String]' >
+			<sftp:content ><![CDATA[#[vars.vData]]]></sftp:content>
+		</sftp:write>
+	</sub-flow>
+	<sub-flow name="prepare_notification_msg" doc:id="e1c523ea-500a-45fe-a992-c3e47fdac8f1" >
+		<ee:transform doc:name="Convert To Notification msg format" doc:id="36b25835-1edd-4fc7-9aa7-5fed54f3686e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "errorMsg": "The below details are error records after validation",
+    "Error Records" : vars.invData map {
+          ("Record " ++ ($$+1)):$
+    }
+    
+} ]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="token" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Convert To String" doc:id="249b0698-9629-4a07-81f3-26843aac537b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.^raw as String]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Ref to Send Notification API" doc:id="8029dde7-d38f-498e-8194-5f728e91e286" name="notificationSub_Flow" />
+	</sub-flow>
+</mule>

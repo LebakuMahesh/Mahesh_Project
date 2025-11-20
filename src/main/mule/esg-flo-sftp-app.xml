@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
+	<flow name="esg-flo-sftp-flow-main" doc:id="d4c0468a-84da-412d-a8d4-06bd0aec9d5c" >
+		<sftp:listener doc:name="On New or Updated File" doc:id="9cf680f5-d19a-440c-b7ba-a9e29ea2350f" config-ref="SFTP_Config" watermarkEnabled="true" moveToDirectory="${sftp.newPath}" applyPostActionWhenFailed="false" overwrite="true" directory="${sftp.directory}" recursive="false">
+			<scheduling-strategy >
+				<fixed-frequency frequency="10" timeUnit="MINUTES" />
+			</scheduling-strategy>
+			<sftp:matcher filenamePattern="${sftp.pattern}"/>
+		</sftp:listener>
+		<logger level="INFO" doc:name="Start Log" doc:id="84bd9bc4-1a28-45b4-a084-d648bb73e875" message='"started esg-flo-sftp flow"' />
+		<ee:transform doc:name="File Name, Valid and Invalid Data" doc:id="1b581173-ca13-4e88-8345-b33a0b79e8e2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="vData" ><![CDATA[%dw 2.0
+output application/json
+---
+[]]]></ee:set-variable>
+				<ee:set-variable variableName="invData" ><![CDATA[%dw 2.0
+output application/json
+---
+[]]]></ee:set-variable>
+				<ee:set-variable variableName="transactionId" ><![CDATA[%dw 2.0
+output application/java
+---
+correlationId default uuid()]]></ee:set-variable>
+				<ee:set-variable resource="dwl/var-fileName.dwl" variableName="fileName" />
+				<ee:set-variable variableName="writeFile" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	
+"writePath": Mule::p('sftp.movePath')
+
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Check files exist or not" doc:id="b8d0b677-a4bc-44b2-a33b-e1bf73660d14" >
+			<when expression='#[( payload."20240828 Waste examples" != null) and (payload."Sheet1" == null)]' >
+				<ee:transform doc:name="Valid and Invalid Data For 20240828 Waste Examples File" doc:id="dfc900e1-5ef4-4e90-b38b-d7795f6ebb53" >
+					<ee:message />
+					<ee:variables >
+						<ee:set-variable variableName="vData" ><![CDATA[%dw 2.0
+output application/json
+---
+payload."20240828 Waste examples" map ((item1, index1) ->
+{
+    "CustomerSiteId": item1."Customer Site ID",
+    "SiteName": item1."Site Name",
+    "wasteType": item1."Waste Type",
+    "weight": item1."Weight",
+    "processType": item1."Process Type",
+    "purchaseDate": item1."Purchase Date"
+}) filter ((item, index) -> item.CustomerSiteId != null and item.CustomerSiteId != "" and item.SiteName != null and item.SiteName != "" and item.wasteType != null and item.wasteType != "" and item.weight != null and item.weight != "" and item.processType != null and item.processType != "" and item.purchaseDate != null and item.purchaseDate != "")]]></ee:set-variable>
+						<ee:set-variable variableName="invData" ><![CDATA[%dw 2.0
+output application/json
+---
+payload."20240828 Waste examples" map ((item1, index1) ->
+{
+    "CustomerSiteId": item1."Customer Site ID",
+    "SiteName": item1."Site Name",
+    "wasteType": item1."Waste Type",
+    "weight": item1."Weight",
+    "processType": item1."Process Type",
+    "purchaseDate": item1."Purchase Date"
+}) filter ((item, index) -> (item.CustomerSiteId == null or item.CustomerSiteId == "") or (item.SiteName == null or item.SiteName == "") or (item.wasteType == null or item.wasteType == "") or (item.weight == null or item.weight == "") or (item.processType == null or item.processType == "") or (item.purchaseDate == null or item.purchaseDate == ""))]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="Ref to Valid and Invalid Data For  20240828 Waste Examples File" doc:id="5bcbea2e-f776-45cb-af83-9ff46441b684" name="valid-invaliddata-flow" />
+			</when>
+			<when expression='#[( payload."20240828 Waste examples" == null) and (payload."Sheet1" != null)]' >
+				<ee:transform doc:name="Valid and Invalid Data For Sheet1 File" doc:id="09bf5c20-1c5a-49ac-8ee1-1bc1631edae1" >
+					<ee:message />
+					<ee:variables >
+						<ee:set-variable variableName="vData" ><![CDATA[%dw 2.0
+output application/json
+---
+payload."Sheet1" map ((item, index) ->
+{
+    "businessUnit": item."Business Unit" default "",
+    "supplier": if(isEmpty(item."Supplier")) ""  else item.Supplier ,
+    "supplierId": item."Supplier ID",
+    "productId2": item."Product ID2 (in case product ID 1 is blank)",
+    "countryOfOrigin": item."Supplier Country",
+    "productName": item."Product ID Details",
+    "productId": item."Product ID",
+    "description4": item."Description 4",
+    "description1": item."Description 1",
+    "description2": item."Description 2",
+    "description3": item."Description 3",
+    "description5": item."Description 5",
+    "purchaseDate": item."Purchase Date",
+    "spend": item."Spend (EUR)",
+    "spendUnit": item."Spend (EUR)"   
+}) filter ((item, index) -> item.businessUnit != null and item.businessUnit != "" and item.supplier != null and item.supplier != "" and item.supplierId != null and item.supplierId != "" and item.productId2 != null and item.productId2 != "" and item.countryOfOrigin != null and item.countryOfOrigin != "" and item.productName != null and item.productName != "" and item.productId != null and item.productId != "" and item.description4 != null and item.description4 != "" and item.description1 != null and item.description1 != "" and item.description2 != null and item.description2 != "" and item.description3 != null and item.description3 != "" and item.description5 != null and item.description5 != "" and item.purchaseDate != null and item.purchaseDate != "" and item.spend != null and item.spend != "" and item.spendUnit != null and item.spendUnit != "")]]></ee:set-variable>
+						<ee:set-variable variableName="invData" ><![CDATA[%dw 2.0
+output application/json
+---
+payload."Sheet1" map ((item, index) ->
+{
+    "businessUnit": item."Business Unit" default "",
+    "supplier": if(isEmpty(item."Supplier")) ""  else item.Supplier ,
+    "supplierId": item."Supplier ID",
+    "productId2": item."Product ID2 (in case product ID 1 is blank)",
+    "countryOfOrigin": item."Supplier Country",
+    "productName": item."Product ID Details",
+    "productId": item."Product ID",
+    "description4": item."Description 4",
+    "description1": item."Description 1",
+    "description2": item."Description 2",
+    "description3": item."Description 3",
+    "description5": item."Description 5",
+    "purchaseDate": item."Purchase Date",
+    "spend": item."Spend (EUR)",
+    "spendUnit": item."Spend (EUR)"   
+}) filter ((item, index) -> (item.businessUnit == null or item.businessUnit == "") or (item.supplier == null or item.supplier == "") or (item.supplierId == null or item.supplierId == "") or (item.productId2 == null or item.productId2 == "") or (item.countryOfOrigin == null or item.countryOfOrigin == "") or (item.productName == null or item.productName == "") or (item.productId == null or item.productId == "") or (item.description4 == null or item.description4 == "") or (item.description1 == null or item.description1 == "") or (item.description2 == null or item.description2 == "") or (item.description3 == null or item.description3 == "") or (item.description5 == null or item.description5 == "") or (item.purchaseDate == null or item.purchaseDate == "") or (item.spend == null or item.spend == "") or (item.spendUnit == null or item.spendUnit == ""))]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="Ref to Valid and Invalid Data For Sheet1 File" doc:id="7722b0db-ada6-4faf-a44e-ba842e2fc433" name="valid-invaliddata-flow" />
+			</when>
+			<otherwise >
+				<ee:transform doc:name="No File Data" doc:id="bf1ddd19-3705-42b0-afd2-3a0eebd3bbd9" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"no file data"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="End Log" doc:id="5b605ae4-6454-4e7c-a851-a6c1bfd22a3c" message='"esg-flo-sftp flow ended"' />
+		<error-handler ref="error-handling" />
+	</flow>
+</mule>

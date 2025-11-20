@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:smb="http://www.mulesoft.org/schema/mule/smb"
+	xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd
+http://www.mulesoft.org/schema/mule/smb http://www.mulesoft.org/schema/mule/smb/current/mule-smb.xsd">
+    <configuration-properties doc:name="Configuration properties" doc:id="5dcdb9af-4f21-4987-a22c-fce938211882" file="properties/${env}.properties" />
+	<configuration-properties doc:name="Configuration properties" doc:id="6fd4d86e-a871-45ac-a674-7eaa2186cd93" file="properties\query.properties" />
+	<crypto:pgp-config name="Crypto_Pgp1" doc:name="Crypto Pgp" doc:id="2f23377a-0b60-4233-a70f-08af39c52f21" publicKeyring="kyriba_public_key.gpg" >
+		<crypto:pgp-key-infos >
+			<crypto:pgp-asymmetric-key-info keyId="B871EBFF" fingerprint="C9EA6B46677464F14494CBC9D62973B5B871EBFF" />
+		</crypto:pgp-key-infos>
+	</crypto:pgp-config>
+	
+	<smb:config name="SMB_Connector_Config" doc:name="SMB Connector Config" doc:id="f8ea5cd9-c66b-4b4f-82b8-839b9675e620" >
+		<smb:connection host="${kyriba.file.share.hostname}" share="${kyriba.file.share.path}" username="${kyriba.file.share.username}" password="${secure::kyriba.file.share.password}" domain="${kyriba.file.share.domain}"/>
+	</smb:config>
+	
+	<sftp:config name="file-config" doc:name="SFTP Config" doc:id="796eabcc-b7f1-45a2-9fd4-0e4b6a48c70e" >
+		<sftp:connection host="#[vars.readfile.host]" username="#[vars.readfile.username]" password="#[vars.readfile.password]" />
+	</sftp:config>
+	<sftp:config name="file-write-config" doc:name="SFTP Config" doc:id="84cec0bc-ec5d-4cff-8ae6-6c8ae8983452" >
+		<sftp:connection host="#[vars.writefile.host]" username="#[vars.writefile.username]" password="#[vars.writefile.password]"/>
+	</sftp:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="34622ea3-0656-43d4-b3a5-bb6225f18458" file="properties\common.properties" />
+	<configuration-properties doc:name="Configuration properties" doc:id="1cf9ad7b-fcf7-4517-9ea3-fa10ff866722" file="properties\audit.query.properties" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="5d5c392a-b47d-4b9a-a9c5-be96e18e614f" key="${securekey}" file="properties/${env}.properties">
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<global-property doc:name="Global Property" doc:id="03897efe-d18b-4cc7-b519-f73ab5e5d453" name="securekey" value="Rcycmulenonprod" />
+	
+
+</mule>
