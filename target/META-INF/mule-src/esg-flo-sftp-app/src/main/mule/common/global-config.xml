@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<sftp:config name="SFTP_Config" doc:name="SFTP Config" doc:id="028aab16-88de-4e4e-ab3e-af248be70a78" >
+		<sftp:connection host="${sftp.host}" username="${secure::sftp.username}" identityFile="devpriv.pem" passphrase="${secure::sftp.passphrase}" port="${sftp.port}" workingDir="/"/>
+	</sftp:config>
+	<http:request-config name="HTTP_Request_accessToken_configuration" doc:name="HTTP Request configuration" doc:id="82681f02-3032-4082-b1f3-5d5d8adf1cfb" basePath="${token.requester.basePath}">
+		<http:request-connection protocol="HTTPS" host="${token.requester.host}">
+			<reconnection >
+				<reconnect frequency="${reconnection.frequency}" count="${reconnection.attempts}" />
+			</reconnection>
+		</http:request-connection>
+	</http:request-config>
+	<configuration-properties doc:name="Application Configuration properties" doc:id="99204976-6dbd-49af-a0c8-4beb93478a08" file="config/config-${mule.env}.yaml"/>
+	<configuration-properties doc:name="Common Configuration properties" doc:id="83b624b1-4427-4bff-a54f-bf37925d9655" file="config/config-common.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="ce72ff8a-76ed-4ceb-b458-cca6f3a8b471" file="config/config-secured-${mule.env}.yaml" key="${mule.key}" >
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<os:object-store name="accessToken_Object_store" doc:name="Object store" doc:id="8102efa7-145f-4b3b-bdfe-48b3d3ec42ea" entryTtl="30" expirationInterval="30" entryTtlUnit="DAYS" expirationIntervalUnit="DAYS"/>
+	<http:request-config name="HTTP_Notification_Request_configuration" doc:name="HTTP Request configuration" doc:id="66755423-3cfb-4c02-9d9a-fee662c84363" basePath="${notify.requester.basePath}" >
+		<http:request-connection host="${notify.requester.host}" port="${notify.requester.port}" protocol="HTTPS"/>
+	</http:request-config>
+	<configuration doc:name="Configuration" doc:id="0f3c87df-c121-4d7e-bf5f-3c07733ffd25" defaultErrorHandler-ref="error-handling" />
+</mule>

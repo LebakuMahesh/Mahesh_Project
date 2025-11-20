@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd">
+	<error-handler name="error-handling" doc:id="e47f57b7-7378-4074-aacb-8512ae52a472" >
+		<on-error-propagate type="HTTP:BAD_REQUEST, HTTP:PARSING, HTTP:METHOD_NOT_ALLOWED, HTTP:NOT_ACCEPTABLE, HTTP:NOT_FOUND, HTTP:TOO_MANY_REQUESTS, HTTP:UNSUPPORTED_MEDIA_TYPE" enableNotifications="true" logException="true" doc:name="On Error Propagate - 400 series except authentication" doc:id="76b12479-8cfa-41f9-9947-a97bf1dd84c0" doc:description="bad req">
+			<ee:transform doc:name="Error - 400" doc:id="6cf762d0-a6dc-4d23-b5ed-e30a43666b2a" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if(!isEmpty(error.errorMessage.payload) and !isEmpty(error.errorMessage.payload.errorOrigin)) 
+	error.errorMessage.payload
+else { 
+  "errorOrigin": p('application.name'),
+  "status" : "ERROR",
+  "code" : error.errorType.identifier default "400",
+  "message" :  error.description,
+  "description" : error.detailedDescription,
+  "correlationId" : vars.correlationId default "",
+  "timestamp": now() as DateTime
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<flow-ref doc:name="Error Handler Exit" doc:id="02b1aa37-5574-4d2d-a559-2569911ee56f" name="error-handler-log" />
+		</on-error-propagate>
+		<on-error-propagate type="HTTP:CLIENT_SECURITY, HTTP:SECURITY , HTTP:UNAUTHORIZED" enableNotifications="true" logException="true" doc:name="On Error Propagate - Authentication" doc:id="f18c2f97-ee00-43fa-acff-d70c4a0f5813" doc:description="401 error">
+			<ee:transform doc:name="Error - 401" doc:id="04847c10-1105-44b3-92d6-b82945e94809" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if(!isEmpty(error.errorMessage.payload) and !isEmpty(error.errorMessage.payload.errorOrigin)) 
+	error.errorMessage.payload
+else { 
+  "errorOrigin": p('application.name'),
+  "status" : "ERROR",
+  "code" : error.errorType.identifier default "401",
+  "message" :  error.description,
+  "description" : error.detailedDescription,
+  "correlationId" : vars.correlationId default "",
+  "timestamp": now() as DateTime
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="httpStatus" ><![CDATA[401]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<flow-ref doc:name="Error Handler Exit" doc:id="42c83efa-462c-441f-8b79-87ae49e402fa" name="error-handler-log" />
+		</on-error-propagate>
+
+		<on-error-propagate type="REDELIVERY_EXHAUSTED, CONNECTIVITY, TIMEOUT" enableNotifications="true" logException="true" doc:name="On Error Propagate - Connectivity " doc:id="9702fd1e-ac88-40f5-ac5f-922a844f26d9" doc:description="503">
+			<ee:transform doc:name="Error - 503" doc:id="81e5f587-f6be-4d3c-b005-0c1d599fb0d7" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if(!isEmpty(error.errorMessage.payload) and !isEmpty(error.errorMessage.payload.errorOrigin)) 
+	error.errorMessage.payload
+else { 
+  "errorOrigin": p('application.name'),
+  "status" : "ERROR",
+  "code" : error.errorType.identifier default "401",
+  "message" :  error.description,
+  "description" : error.detailedDescription,
+  "correlationId" : vars.correlationId default "",
+  "timestamp": now() as DateTime
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="httpStatus" ><![CDATA[503]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<flow-ref doc:name="Error Handler Exit" doc:id="3fc95850-2325-41ba-aac9-16856168bd2f" name="error-handler-log" />
+		</on-error-propagate>
+		<on-error-propagate type="SFTP:CONNECTION_TIMEOUT,SFTP:CONNECTIVITY,SFTP:DISCONNECTED,SFTP:FILE_ALREADY_EXISTS,SFTP:FILE_DOESNT_EXIST,SFTP:FILE_LOCK,SFTP:ILLEGAL_CONTENT,SFTP:ILLEGAL_PATH,SFTP:INVALID_CREDENTIALS,SFTP:RETRY_EXHAUSTED,SFTP:SERVICE_NOT_AVAILABLE,SFTP:UNKNOWN_HOST" enableNotifications="true" logException="true" doc:name="On Error Propagate - Connectivity" doc:id="aa73b928-3447-4d3e-be53-a08dfef13149" doc:description="bad req">
+			<ee:transform doc:name="Error - 500" doc:id="68231c86-5090-4cf0-bf17-5538d97e0419" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if(!isEmpty(error.errorMessage.payload) and !isEmpty(error.errorMessage.payload.errorOrigin)) 
+	error.errorMessage.payload
+else { 
+  "errorOrigin": p('application.name'),
+  "status" : "ERROR",
+  "message" :  error.description,
+  "description" : error.detailedDescription,
+  "correlationId" : vars.correlationId default "",
+  "timestamp": now() as DateTime
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="httpStatus" ><![CDATA[500]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<flow-ref doc:name="Error Handler Exit" doc:id="2d089072-2c9d-492b-b5fa-c50d6f90ed79" name="error-handler-log" />
+		</on-error-propagate>
+		<!-- If none of the above matches then handle a the exception using generic handler -->
+		<on-error-propagate type="ANY" enableNotifications="true" logException="true" doc:name="On Error Propagate - Unknown error (can be separated on requirement)" doc:id="447577b6-8b22-4106-bde2-23f49df307e0" doc:description="error">
+			<ee:transform doc:name="Error - 500" doc:id="478cdebc-79ff-4adc-aa90-8b6e4862f0ee">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+if(!isEmpty(error.errorMessage.payload) and !isEmpty(error.errorMessage.payload.errorOrigin)) 
+	error.errorMessage.payload
+else { 
+  "errorOrigin": p('application.name'),
+  "status" : "ERROR",
+  "message" :  error.description,
+  "description" : error.detailedDescription,
+  "correlationId" : vars.correlationId default "",
+  "timestamp": now() as DateTime
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[500]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<flow-ref doc:name="Error Handler Exit" doc:id="212d1073-1bb3-4116-bdd9-3e7de5025d40" name="error-handler-log" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8e78193c-6bad-4401-bc5f-fd89e282a718" when="#[error.errorType.identifier contains 'FORBIDDEN']" >
+			<ee:transform doc:name="ERR-403" doc:id="2d8b67d6-629c-4e92-a67c-e8fab40dbf4d" >
+				<ee:message >
+					<ee:set-payload resource="transformations/error403.dwl" />
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="httpStatus" ><![CDATA[403]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<flow-ref doc:name="error-handler-exit" doc:id="f8d51a00-65aa-461d-9230-6d2602d55a2e" name="error-handler-log" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate1" doc:id="4ef973d8-c143-45b9-a8c8-168a029c4102" when="#[error.errorType.identifier contains 'NOT_FOUND']" >
+			<ee:transform doc:name="ERR-404" doc:id="1894419e-3ec9-401c-96b4-41974b55fda7" >
+				<ee:message >
+					<ee:set-payload resource="transformations/error404.dwl" />
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="httpStatus" ><![CDATA[404]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<flow-ref doc:name="error-handler-exit" doc:id="65eac1af-76f7-47f0-b154-579404f59234" name="error-handler-log" />
+		</on-error-propagate>
+	</error-handler>
+	<flow name="error-handler-log" doc:id="c3a43d70-fbe8-4900-8759-e64d8eb45131" >
+		<logger level="INFO" doc:name="Error Log" doc:id="fff1c8dd-5c0d-4c81-b76d-0197f576821b" message="#[payload]"/>
+	</flow>
+</mule>

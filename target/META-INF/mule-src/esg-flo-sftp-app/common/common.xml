@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
+	<sub-flow name="get-batchId-flow" doc:id="fabbb521-9551-41d9-b993-28413cc2028b" >
+		<logger level="INFO" doc:name="batch id Lstart logger" doc:id="ad1a523a-e714-4977-a5ef-256c0415a0f7" message='#["Requesting batch id for audit_log_sequence"]'/>
+		<!-- [STUDIO:"selctingbatchId data from  d365 sys api"]<http:request method="GET" doc:name="selctingbatchId data from  d365 sys api" doc:id="e9c81ed0-5c9c-4d3c-9265-0a388da5d576" config-ref="RCYC_HTTPs_Request_configuration" path="${kyriba.sys.path}" responseTimeout="500000" sendCorrelationId="ALWAYS" correlationId="#[vars.correlationId&#93;">
+			<http:headers ><![CDATA[#[output application/java
+&#45;&#45;-
+{
+	"getquery": p('getbatch.query'),
+	"client_id": p('kyriba.sys.client_id'),
+    "client_secret": p('secure::kyriba.sys.client_secret')
+}&#93;&#93;&#93;></http:headers>
+		</http:request> [STUDIO] -->
+		<http:request method="GET" doc:name="RequestToSapiBatchId" doc:id="fec1ec3f-df36-4679-9b40-9b4106d14102" config-ref="RCYC_HTTPs_Request_configuration" path="${system.batchIdPath}" sendCorrelationId="ALWAYS" correlationId="#[vars.correlationId]" responseTimeout="#[500000]">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"client_secret" : p('secure::system.dbClient_secret'),
+	"query" : p('getbatch.query'),
+	"client_id" : p('system.dbClient_id')
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="Log the batchid" doc:id="ce21f9af-84cd-44af-8176-4f681bc41e4c" message='#[payload]' />
+		<ee:transform doc:name="mapping batchId" doc:id="320d0ee4-8b40-438b-8a99-5e0f12fe3f22" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.resultSet1.next_value[0]]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b73a665a-25bc-4f10-a0b4-5823abdf2716" message="#[payload]"/>
+	</sub-flow>
+	<sub-flow name="get-batchId-flow-1" doc:id="f98f603e-b7e3-4f62-b933-b02f9de8d5e8" >
+		<logger level="INFO" doc:name="batch id Lstart logger" doc:id="abe59270-96d7-4e2f-acc3-67a5e45333cc" message='#["Requesting batch id for audit_log_sequence"]'/>
+		<!-- [STUDIO:"selctingbatchId data from  d365 sys api"]<http:request method="GET" doc:name="selctingbatchId data from  d365 sys api" doc:id="d1b3a055-b973-4d18-85c3-d190fa22f807" config-ref="RCYC_HTTPs_Request_configuration" path="${kyriba.sys.path}" responseTimeout="500000" sendCorrelationId="ALWAYS" correlationId="#[vars.correlationId&#93;">
+			<http:headers ><![CDATA[#[output application/java
+&#45;&#45;-
+{
+	"getquery": p('getbatch.query'),
+	"client_id": p('kyriba.sys.client_id'),
+    "client_secret": p('secure::kyriba.sys.client_secret')
+}&#93;&#93;&#93;></http:headers>
+		</http:request> [STUDIO] -->
+		<http:request method="GET" doc:name="RequestToSapiBatchId" doc:id="54ea2ceb-b5d6-4a67-8575-35a1f029bd6e" config-ref="RCYC_HTTPs_Request_configuration" path="${system.batchIdPath}" sendCorrelationId="ALWAYS" correlationId="#[vars.correlationId]" responseTimeout="#[500000]">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"client_secret" : p('secure::system.dbClient_secret'),
+	"query" : p('batchIdQuery'),
+	"client_id" : p('system.dbClient_id')
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="Log the batchid" doc:id="ea6e2964-a15c-4bc9-8f36-4b6a09c2d634" message='#[payload]' />
+		<ee:transform doc:name="mapping batchId" doc:id="842e0a61-1eae-4b0b-b3e4-e9105247c09c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.resultSet1.next_value[0]]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="15c70d42-fa51-4339-93cb-76e4bbc350f8" message="#[payload]"/>
+	</sub-flow>
+	<sub-flow name="rcyc-tshare-csv-paymentSub_Flow" doc:id="97a57f89-847c-4df1-9ea6-39b9ab4c1a96" >
+	
+	<http:request method="GET" doc:name="selecting  erp in kyriba  erp sys api" doc:id="ef31d759-84b8-4f1c-b95d-9e6f2ff7025e" config-ref="RCYC_HTTPs_Request_configuration" path="${kyriba.sys.path}" responseTimeout="500000" sendCorrelationId="ALWAYS" correlationId="#[vars.correlationId]">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"getquery" : p('geterp.query') ++ vars.batchId,
+	"client_id": p('kyriba.sys.client_id'),
+    "client_secret": p('secure::kyriba.sys.client_secret')
+}]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="erp data,kr_batchid_padded" doc:id="8406deaf-d630-4fef-8873-abdefd1b63be" >
+					<ee:message >
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="KR_BATCHID_PADDED" ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+output application/json
+//var a= ("1" ++ leftPad(vars.batchId[0],10, "0") as String) as Number
+---
+//"SELECT TOP  " ++ a ++  " * from [dbo].[erp_kyriba_payments];"
+"SELECT TOP 1 batchid, REPLACE(STR(" as String ++ vars.batchId as String ++ ", 10),' ','0') as id from erp_kyriba_payments;"]]></ee:set-variable>
+						<ee:set-variable variableName="erpedata" ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ((item, index) ->
+{
+    "TransactionCode": item.TransactionCode,
+    "Bank_Account": item.BankAccount,
+    "Third_Party_Name": item.ThirdPartyName,
+    "Third_Party_CorporateID_Code": item.ThirdPartyCorporateIDCode,
+    "Third_Party_Identifier_Type": item.ThirdPartyIdentifierType,
+    "Third_Party_Identifier_Value": item.ThirdPartyIdentifierValue,
+    "Third_Party_Address1": item.ThirdPartyAddress1,
+    "Third_Party_Address2": item.ThirdPartyAddress2,
+    "Third_Party_City": item.ThirdPartyCity,
+    "Third_Party_Zip": item.ThirdPartyZip,
+    "Third_Party_Province_Code": item.ThirdPartyProvinceCode,
+    "Third_Party_Country_Code": item.ThirdPartyCountryCode,
+    "Third_Party_Bank_Name": item.ThirdPartyBankName,
+    "Third_Party_Bank_BIC_Code": item.ThirdPartyBankBICCode,
+    "Third_Party_Bank_Identifier_Type": item.ThirdPartyBankIdentifierType,
+    "Third_Party_Bank_Identifier_Value": item.ThirdPartyBankIdentifierValue,
+    "Third_Party_Bank_Address1": item.ThirdPartyBankAddress1,
+    "Third_Party_Bank_Address2": item.ThirdPartyBankAddress2,
+    "Third_Party_Bank_City": item.ThirdPartyBankCity,
+"Third_Party_Bank_Zip": item.ThirdPartyBankZip,   
+"Third_Party_Bank_Province_Code": item.ThirdPartyBankProvinceCode,
+     "Third_Party_Bank_Country_Code": item.ThirdPartyBankCountryCode,
+      "Third_Party_Bank_Account_Currency": item.ThirdPartyBankAccountCurrency,
+      "Third_Party_Bank_BankID_Type": item.ThirdPartyBankBankIDType,
+      "Third_Party_Bank_AccountID1": item.ThirdPartyBankAccountID1,
+      "Correspondend_BIC": item.CorrespondentBIC,
+      "Correspondend_Description": item.CorrespondentDescription,
+      "Correspondend_Country_Code": item.CorrespondentCountryCode,
+      "Correspondend_Identifier_Type": item.CorrespondentIdentifierType,
+      "Correspondend_Identifier_Value": item.CorrespondentIdentifierValue,
+      "Correspondend_Account": item.CorrespondentAccount,
+      "Transaction_Currency": item.TransactionCurrency,
+      "Transaction_Amount": item.TransactionAmount,
+      "Currency_Rate":  item.CurrencyRate,
+     "Transaction_Date": if(item.TransactionDate != null ) item.TransactionDate as Date as String {format:
+"dd-MM-yyyy"} else "",
+      "Value_Date": if(item.ValueDate != null )item.ValueDate as Date as String {format:
+"dd-MM-yyyy"} else "",
+      "Budget_Code": item.BudgetCode,
+      "Fee_Assessment": item.FeeAssessment,
+      "Currency_Buy_Flag": item.CurrencyBuyFlag,
+      "Currency_Buy_Reference": item.CurrencyBuyReference,
+     "Beneficiary_Reminder_Flag": item.BeneficiaryReminderFlag,
+      "Beneficiary_Reminder_Mode": item.BeneficiaryReminderMode,
+      "Beneficiary_Reminder_Number": item.BeneficiaryReminderNumber,
+      "Correspondent_BIC_1": item.CorrespondentBIC1,
+      "Correspondent_Description_1": item.CorrespondentDescription1,
+      "Correspondent_Country_Code_1": item.CorrespondentCountryCode1,
+      "Correspondent_Identifier_Type_1": item.CorrespondentIdentifierType1,
+      "Correspondent_Identifier_Value_1": item.CorrespondentIdentifierValue1,
+      "Correspondent_Account_1": item.CorrespondentAccount1,
+      "Voucher": item.Voucher,
+      "VendorAccount": item.VendorAccount,
+      "Reference": item.Reference,
+      "OneTimeThirdPartyAccountNature": item.OneTimeThirdPartyAccountNature,
+      "DebitAccountAmount": item.DebitAccountAmount,
+      "Purpose": item.Purpose,
+      "Reason1": item.Reason1,
+      "Reason2": item.Reason2,
+      "Reason3": item.Reason3,
+      "Reason4": item.Reason4,
+      "FreeText1": item.FreeText1,
+      "FreeText2": item.FreeText2,
+      "FreeText3": item.FreeText3,
+      "TransferRemittanceIdentifer1": item.TransferRemittanceIdentifer1,
+      "TransferRemittanceIdentifer2":item.TransferRemittanceIdentifer2,
+      "LedgerJournalId": item.LedgerJournalId,
+} )]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+		<logger level="INFO" doc:name="erp kyriba db Logger" doc:id="ce10c1e8-ebf6-4c1d-9ad3-c893868e4432" message='#["selecting top 1 batchId from erp_kyriba_payments with batchId:" as String ++ vars.batchId]'/>
+				<http:request method="GET" doc:name="selecting  KR_BATCHID_PADDED in kyriba  erp sys api" doc:id="76351bbf-d5dd-4882-8db8-c24a4e17668d" config-ref="RCYC_HTTPs_Request_configuration" path="${kyriba.sys.path}" responseTimeout="500000" correlationId="#[vars.correlationId]" sendCorrelationId="ALWAYS">
+					<http:headers><![CDATA[#[output application/java
+---
+{
+	"getquery" : vars.KR_BATCHID_PADDED,
+	"client_id": p('kyriba.sys.client_id'),
+    "client_secret": p('secure::kyriba.sys.client_secret')
+}]]]></http:headers>
+				</http:request>
+				<ee:transform doc:name="erp payload" doc:id="95cf8de3-c91e-486e-8371-cbd50c5157d8">
+					<ee:message>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="KR_BATCHID_PADDED" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<ee:transform doc:name="file config,filename" doc:id="41ec429c-24b7-4626-8c52-96c2a0c706f8">
+					<ee:message>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="filenames" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	
+	"filenameasc": "CYHLTMS.NC4.IMPORT." ++ now() as Date as String {format: "yyyyMMdd"} ++ vars.KR_BATCHID_PADDED.id[0] ++ ".PY_TRANSFER.I_PAYMENTS.null.null.asc",
+"filenamecsv": "CYHLTMS.NC4.IMPORT." ++ now() as Date as String {format: "yyyyMMdd"}  ++ vars.KR_BATCHID_PADDED.id[0] ++ ".PY_TRANSFER.I_PAYMENTS.null.null.csv",
+
+	
+}]]></ee:set-variable>
+						<ee:set-variable variableName="readfile" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"host": p('erp.sftp.host'),
+"username": p('erp.sftp.username'),
+"password": p('secure::erp.sftp.password'),
+"path": p('erp.sftp.path')
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<scatter-gather doc:name="sending encrypt,decrypt data to sftp" doc:id="5f77bdab-0bcc-4c9c-a2da-17caecfc6f5c" >
+					<route >
+						<logger level="INFO" doc:name="encryption Logger" doc:id="4300b469-7acd-4d5a-af31-4ab0a80a47ea" message='"encrypting the erp data"'/>
+						<crypto:pgp-encrypt doc:name="encrypting the erp data" doc:id="a6e2f4bf-6627-4eb4-a628-36d1f272fde1" config-ref="Crypto_Pgp1" keyId="B871EBFF">
+							<crypto:content><![CDATA[#[vars.erpedata]]]></crypto:content>
+						</crypto:pgp-encrypt>
+				<logger level="INFO" doc:name="writing encrypt data to sftp" doc:id="7c0dc2ab-57fc-41d2-ba8c-4d117e4e97f5" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"writing the encrypted file into " ++ vars.readfile.path ++ vars.filenames.filenameasc]'/>
+						<sftp:write doc:name="Writing encryption data" doc:id="cf118ba6-dd0e-4f88-a6eb-506cb4b645c0" config-ref="file-config" path="#[vars.readfile.path ++ vars.filenames.filenameasc]">
+						</sftp:write>
+					</route>
+					<route >
+						<logger level="INFO" doc:name="writing non encrypt data to sftp" doc:id="de56fe71-9ec6-480c-903d-ab9ee1f3f9f6" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"writing the non encrypted file into " ++ vars.readfile.path ++ vars.filenames.filenamecsv]'/>
+						<sftp:write doc:name="Writing non encryption data" doc:id="4262e2f4-c27e-4f04-953f-ca407096eba0" path="#[vars.readfile.path ++ vars.filenames.filenamecsv]" config-ref="file-config">
+							<sftp:content><![CDATA[#[%dw 2.0
+output application/csv
+---
+vars.erpedata]]]></sftp:content>
+						</sftp:write>
+					</route>
+				</scatter-gather>
+				</sub-flow>
+	<sub-flow name="publishing-data-subflow" doc:id="89d5c6af-96ba-4ddd-88e4-1aa19146a8a8" >
+		<logger level="INFO" doc:name="before publish" doc:id="63c94880-f3a8-47fb-b37d-8a8f1fc1d2ec" message='#["publishing data to exchange"]' />
+		<ee:transform doc:name="Transform Message" doc:id="ddcb54cc-1f09-4a28-b591-a4dbd8f9146f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{"data": vars.audit_log_detail.body ++ {"correlationId": vars.correlationId as String},
+	"query": vars.audit_log_detail.query,
+	"dbName": p('database'),
+    "d365Env": p('d365Env')
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="0ac31518-51a4-4214-b532-5f0266c7191c" message="#[payload]"/>
+		<anypoint-mq:publish doc:name="Publishing to exchange" doc:id="9ef9378c-cbff-46f5-92a8-2a27187bf429" config-ref="RCYC_Anypoint_MQ_Config" destination="${mq.exchange.name}">
+			<anypoint-mq:properties><![CDATA[#[{
+	"status" : vars.audit_log_detail.userproperty
+}]]]></anypoint-mq:properties>
+		</anypoint-mq:publish>
+		<logger level="INFO" doc:name="after publish" doc:id="a990ab56-7c55-4e49-a626-022cb6acae0d" message='#["data published to exchange successfully"]' />
+	</sub-flow>
+</mule>

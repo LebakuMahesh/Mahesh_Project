@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<sub-flow name="impl-esg-flo-tokenOS-Sub_Flow" doc:id="a996f7b9-a8ee-41b9-9992-96d618f86eb2" >
+		<os:retrieve doc:name="Retrieving The Token" doc:id="a577a91a-4ed4-48f3-9927-df9cc1b54361" key='#["accessToken"]' objectStore="accessToken_Object_store">
+			<os:default-value ><![CDATA[#[1]]]></os:default-value>
+		</os:retrieve>
+		<choice doc:name="Check Token is expired or not" doc:id="6e3a5c4e-f763-4d86-a4c0-6a70b29ddf9a" >
+			<when expression="#[payload == 1]">
+				<logger level="INFO" doc:name="Req Token Logger" doc:id="68f710eb-50f3-434c-b7b9-0db3487adde6" message='"Req New Token"' />
+				<http:request doc:name="Requesting Access Token API" doc:id="356bf5b3-eb38-4e7b-b922-f69de3e197c1" config-ref="HTTP_Request_accessToken_configuration" correlationId="#[vars.transactionId]" responseTimeout="${request.responseTimeout}" sendCorrelationId="ALWAYS" method="${token.requester.postMethod}" path="${token.requester.tokenPath}">
+					<http:body><![CDATA[#[output application/json
+---
+{
+	"client_secret": Mule::p('secure::token.clientSecret'),
+	"grant_type" : Mule::p('token.requester.grantType'),
+	"audience" : Mule::p('token.requester.audience'),
+	"client_id" : Mule::p('token.requester.clientId')
+}]]]></http:body>
+				</http:request>
+				<ee:transform doc:name="Got The Access Token" doc:id="c5ce1200-f595-44ab-85bc-0a9fb7e568ff">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload.access_token]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<os:store doc:name="Storing Access Token Object Store" doc:id="f644b95e-954e-49b5-bbc5-4a4c499d6df2" key='#["accessToken"]' objectStore="accessToken_Object_store" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Got The Token From Object Store" doc:id="4ad93cd6-2ace-4e3a-85bc-a780361239e7" message='"got the token from os"' />
+				<ee:transform doc:name="Payload" doc:id="27b01151-2967-4dfe-9def-af1d3ec6552e">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="valid-invaliddata-flow" doc:id="0fe09f13-8a88-43b5-b722-3051bf392f54" >
+		<choice doc:name="Check valid invalid data exist or not" doc:id="d2d36710-8711-4ee1-ad47-eb0ed4248242" >
+			<when expression="#[vars.invData !=[] and vars.vData !=[]]" >
+				<scatter-gather doc:name="processing both vaild and invalid data" doc:id="a752311a-1478-4c6d-a2a8-d0c69c5be2dc" >
+					<route >
+						<flow-ref doc:name="Ref to Impl-Common-SFTP-Sub Flow" doc:id="011266db-3990-4111-9c52-ea6f2f0bf692" name="impl-common-sftp-Sub_Flow"/>
+						<logger level="INFO" doc:name="Writing The File Into SFTP" doc:id="fa2d0d6d-dade-4d50-aedf-a5c6f78fecfb" message='#["file created in sftp location" ++ vars.fileName as String]'/>
+					</route>
+					<route >
+						<logger level="INFO" doc:name="Processing Invalid Data for file" doc:id="711b8c77-a1fb-4063-b2e2-01b587cb5b1b" message='#[%dw 2.0&#10;output application/json&#10;---&#10;if(payload."Sheet1" != null) "processing invalid data for" ++ " "++ attributes.fileName else "processing invalid data for" ++ " "++ attributes.fileName]'/>
+						<flow-ref doc:name="Ref To Impl-esg-flo-Token Object Store-Sub Flow" doc:id="c9ab4f1e-9622-4bc5-96b1-5cea545b301e" name="impl-esg-flo-tokenOS-Sub_Flow"/>
+						<flow-ref doc:name="Ref To Prepare Notification Msg" doc:id="3d2fb403-7e7f-4730-b2f2-45298ab8cb2c" name="prepare_notification_msg"/>
+						<logger level="INFO" doc:name="Notification Sent" doc:id="efd88291-f683-4e8b-9757-adc5f75709ce" message='"notification sent"'/>
+					</route>
+				</scatter-gather>
+			</when>
+			<when expression="#[vars.vData !=[] and vars.invData == []]" >
+				<logger level="INFO" doc:name="Sending Valid Data" doc:id="d4b0ced2-8ea0-4ef7-b844-ba30f424e827" message='"sending valid data"' />
+				<flow-ref doc:name="Ref to Impl-Common-sftp-Sub Flow" doc:id="5b2800d1-7fa8-4804-bab2-918eae24a39a" name="impl-common-sftp-Sub_Flow" />
+				<logger level="INFO" doc:name="Writing The Data Into sftp Location" doc:id="cabdd71d-fbdb-4c2b-a830-e34e2aa82f21" message='#["file created in sftp location" ++ " " ++ vars.fileName as String]'/>
+			</when>
+			<when expression="#[vars.vData ==[] and vars.invData != []]" >
+				<logger level="INFO" doc:name="Sending Invalid Data for file" doc:id="ff9ca96a-2f14-446d-b17c-e8e9eeb52b9a" message='#[%dw 2.0&#10;output application/json&#10;---&#10;if(payload."Sheet1" != null) "processing invalid data for" ++ " "++ vars.fileName else "processing invalid data for" ++ " "++ vars.fileName]' />
+				<flow-ref doc:name="Ref To Impl-esg-flo-Token OS-Sub Flow" doc:id="4a1ef44c-b113-4b6b-8e49-a995c189bc3e" name="impl-esg-flo-tokenOS-Sub_Flow" />
+				<flow-ref doc:name="Ref To Prepare Notification Msg" doc:id="34bcc4f0-c416-41ad-9a07-6bceb2d1e34f" name="prepare_notification_msg" />
+				<logger level="INFO" doc:name="Notification Sent" doc:id="6e2223a3-cea6-46ba-94ef-d48fbbf23b70" message='"notification Sent"'/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="No Data Processing" doc:id="760ee19e-2afd-45cc-9777-899eb2ca8ac6" message='"no data"' />
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

@@ -1,0 +1,41 @@
+# Dev File to be use in Dev env
+sftp:
+  host: "s-bc03248bb07f47808.server.transfer.eu-central-1.amazonaws.com"
+  port: "22"
+  directory: "source_directory"
+  newPath: "Process Folder"
+  movePath: "target_directory"
+  pattern: "*.xlsx"
+  
+token:
+  requester:
+    port: "443"
+    host: "auth.eu.wip.esgflo.com"
+    postMethod: "POST"
+    basePath: "/oauth/"
+    tokenPath: "token"
+    idelTimeout: "30000"
+    clientId: "STytlQ7QMSX0rozEl0jBKJoQYxpZVSzv"
+    grantType: "client_credentials"
+    audience: "https://eu.api.wip.esgflo.com/"
+notify:
+  requester:
+    host: "dev-esgflo.dev.eu.napi.wip.esgflo.com"
+    port: "443"
+    postMethod: "POST"
+    basePath: "/rockhopper/v1/"
+    path: "notifications/"
+    idelTimeout: "30000"
+    auth: "Bearer"
+ 
+   
+notification:
+   body:
+    tenant: "dev-esgflo"
+    target: "01HN0H42M6JCD5RKKQYR33YA70"
+   resource:
+     id: "12345"
+     type: "MulesoftJob"
+     email: "true"
+  
+ 
